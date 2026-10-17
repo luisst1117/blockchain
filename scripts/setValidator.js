@@ -1,14 +1,21 @@
+const hre = require("hardhat");
+
 async function main() {
-  const CONTRACT_ADDRESS = "0xfe852C0D1AEA7F5fC4947eb59AE1B9Dc264AdCDf";
-  const MY_ADDRESS = "0xb0B24E489792b421113E1ffCb2D97DBfB24Ad3d1";
+  const registryAddress = process.env.REGISTRY_ADDRESS;
+  const validator = process.env.VALIDATOR_ADDRESS;
 
-  const PropertyRegistry = await ethers.getContractFactory("PropertyRegistry");
-  const contract = PropertyRegistry.attach(CONTRACT_ADDRESS);
+  if (!registryAddress || !validator) {
+    throw new Error("Define REGISTRY_ADDRESS y VALIDATOR_ADDRESS en el .env");
+  }
 
-  const tx = await contract.setValidator(MY_ADDRESS, true);
+  const registry = await hre.ethers.getContractAt("PropertyRegistry", registryAddress);
+  const tx = await registry.setValidator(validator, true);
   await tx.wait();
 
-  console.log("✅ Dirección autorizada como validador");
+  console.log("Validador habilitado:", validator);
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

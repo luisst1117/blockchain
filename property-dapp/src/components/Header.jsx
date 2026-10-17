@@ -1,9 +1,9 @@
 function Header() {
   return (
-    <div className="header">
-      <h1>🏠 Property Registry DApp</h1>
-      <p>Registro de inmuebles con Blockchain + IPFS</p>
-    </div>
+    <header className="header">
+      <h1>Registro de inmuebles</h1>
+      <p>NFT on-chain, ficha y escritura en IPFS</p>
+    </header>
   );
 }
 

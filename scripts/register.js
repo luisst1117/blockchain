@@ -1,30 +1,22 @@
-import pkg from "hardhat";
-const { ethers } = pkg;
+const hre = require("hardhat");
 
 async function main() {
-  const CONTRACT_ADDRESS = "0x5cAFc49DFd5f334595CD5A3DBf6DcD78EF0c4D1E";
+  const registryAddress = process.env.REGISTRY_ADDRESS;
+  const cid = process.env.IPFS_CID;
 
-  const contract = await ethers.getContractAt(
-    "PropertyRegistry",
-    CONTRACT_ADDRESS
-  );
+  if (!registryAddress || !cid) {
+    throw new Error("Define REGISTRY_ADDRESS e IPFS_CID en el .env");
+  }
 
-  // Simulación de hash documental
-  const documentHash = ethers.keccak256(
-    ethers.toUtf8Bytes("Escritura inmueble Calle 123 - Bogotá")
-  );
-
-  console.log("📄 Hash del documento:", documentHash);
-
-  const tx = await contract.registerProperty(documentHash);
-  console.log("⏳ Enviando transacción...");
-
+  const uri = cid.startsWith("ipfs://") ? cid : `ipfs://${cid}`;
+  const registry = await hre.ethers.getContractAt("PropertyRegistry", registryAddress);
+  const tx = await registry.registerProperty(uri);
   await tx.wait();
 
-  console.log("✅ Propiedad registrada correctamente");
+  console.log("Registrada con URI:", uri);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
