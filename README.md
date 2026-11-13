@@ -1,66 +1,87 @@
-# Registro de inmuebles (NFT + IPFS)
+# InmoLedger
 
-Cada inmueble es un ERC-721 en `PropertyRegistry`. La ficha (dirección, tipo, área) y, si se adjunta, la escritura se pinnean en IPFS con Pinata. En cadena solo queda el CID.
+Frontend y backend van por separado.
 
-## Qué hay en el repo
+```
+backend/     contratos Solidity, Hardhat, tests, deploy
+frontend/    React + Vite + MetaMask
+```
 
-- `contracts/PropertyRegistry.sol` — contrato que usa la DApp
-- `contracts/PropertyToken.sol` — prototipo viejo, no lo usa el frontend
-- `property-dapp/` — React + Vite + MetaMask
-- `property-blockchain/` — primer intento (HTML). La vía actual es `property-dapp`
+El backend es la cadena (contrato + scripts). El frontend no comparte `node_modules` ni `.env` con el backend.
 
-## Contrato
+## Backend
 
 ```shell
+cd backend
 npm install
 npx hardhat test
 npx hardhat run scripts/deploy.js --network sepolia
-```
-
-Copia la address a `REGISTRY_ADDRESS` y a `property-dapp/.env` como `VITE_REGISTRY_ADDRESS`.
-
-Para habilitar un validador:
-
-```shell
 npx hardhat run scripts/setValidator.js --network sepolia
 ```
 
-Sepolia pide `SEPOLIA_RPC_URL` y `PRIVATE_KEY` en el `.env` de la raíz.
+Variables en `backend/.env`:
 
-## DApp
+```
+SEPOLIA_RPC_URL=
+PRIVATE_KEY=
+REGISTRY_ADDRESS=
+VALIDATOR_ADDRESS=
+```
 
-En [Pinata](https://app.pinata.cloud) → **API Keys** → **New Key**:
-- activa **Admin**, o marca `pinFileToIPFS` y `pinJSONToIPFS`
-- copia el **JWT** (si dejas todos los scopes vacíos, sale `NO_SCOPES_FOUND`)
+## Frontend
 
-En `property-dapp/.env`:
+Copia la address del contrato a `frontend/.env` como `VITE_REGISTRY_ADDRESS`. JWT de Pinata: Admin o `pinFileToIPFS` + `pinJSONToIPFS`.
 
 ```
 VITE_PINATA_JWT=...
 VITE_REGISTRY_ADDRESS=0x...
+VITE_CHAIN_ID=11155111
 ```
 
 ```shell
-cd property-dapp
+cd frontend
 npm install
 npm run dev
 ```
 
-El `npm run dev` proxifica Pinata (`/pinata`) para no pelearse con CORS. Subir fichas desde `npm run preview` o un host estático no va a funcionar sin un backend.
+## Publicar en Netlify
 
-MetaMask tiene que estar en Sepolia. Si no está la red, la DApp intenta agregarla.
+Solo se sube `frontend/`. El contrato no se despliega ahí: sigue en Sepolia.
 
-En la lista, un clic carga el ID en Validar / Transferir. El owner del contrato ve el formulario para autorizar validadores.
+1. Sube el repo a GitHub (si aún no está).
+2. En [app.netlify.com](https://app.netlify.com) → **Add new site** → **Import an existing project**.
+3. Elige el repositorio. Netlify debe leer `netlify.toml`:
+   - Base directory: `frontend`
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+4. En **Site settings → Environment variables** agrega (antes del primer build):
 
-Ignition (opcional):
-
-```shell
-npx hardhat ignition deploy ./ignition/modules/PropertyRegistry.js --network sepolia
 ```
+VITE_PINATA_JWT=tu_jwt_de_pinata
+VITE_REGISTRY_ADDRESS=0x...tu_contrato
+VITE_CHAIN_ID=11155111
+VITE_IPFS_GATEWAY=https://gateway.pinata.cloud/ipfs/
+```
+
+Las variables `VITE_` se meten en el JS en el **build**. Si las cambias, hay que **Redeploy**.
+
+No subas `PRIVATE_KEY` ni el RPC de Hardhat a Netlify.
+
+Sin Git: `cd frontend && npm run build` y arrastra la carpeta `frontend/dist` a [https://app.netlify.com/drop](https://app.netlify.com/drop). En ese modo las env de `.env` local ya van compiladas; no las pongas en un zip público.
+
+MetaMask en Sepolia.
+
+Roles (la vista sale de la wallet, no se elige a mano si no te corresponde):
+
+- **Owner** — cualquier wallet conectada: registrar y transferir *sus* inmuebles
+- **Validador** — `validators[address]` en el contrato: ver pendientes y validar
+- **Administrador** — `owner()` del contrato: dar/quitar validadores y ver el registro entero
+
+Si una wallet tiene más de un rol, aparecen pestañas.
 
 ## Flujo
 
 1. Conectar wallet
-2. Registrar → Pinata (JSON + archivo opcional) → `registerProperty(ipfs://cid)`
-3. Un validador llama `validateProperty`
-4. El dueño transfiere con `transferProperty` (o un `transferFrom`; el struct sigue al NFT)
+2. Registrar → Pinata → contrato
+3. Validar (wallet autorizada)
+4. Transferir
