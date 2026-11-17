@@ -5,3 +5,6 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Define VITE_PINATA_JWT en Site settings → Environment variables
+  # (no la pongas aquí: el archivo se sube a git). Sin esa variable
+  # el botón de registrar queda deshabilitado.

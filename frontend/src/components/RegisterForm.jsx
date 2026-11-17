@@ -67,7 +67,11 @@ function RegisterForm({ onDone }) {
       <h2>{STEP.register.title}</h2>
       <p className="hint">{STEP.register.hint}</p>
       {!pinataConfigured() && (
-        <p className="msg error">Falta la configuración para guardar documentos. Avisa a quien administra el prototipo.</p>
+        <p className="msg error">
+          {import.meta.env.DEV
+            ? "No se cargó la clave para guardar documentos. Cierra el servidor, entra a la carpeta frontend y vuelve a correr npm run dev. Vite solo lee el archivo .env al arrancar."
+            : "Falta la clave para guardar documentos en este sitio publicado. En Netlify hay que definir VITE_PINATA_JWT (la misma de frontend/.env) y volver a desplegar."}
+        </p>
       )}
 
       <Field label="Dirección predial" hint="Ej. Calle 5 # 8-21, Popayán" required>

@@ -28,10 +28,10 @@ export const config = {
   contractAddress: registryAddress(),
   chainId: Number(import.meta.env.VITE_CHAIN_ID || sepolia),
   chainName: "Sepolia",
-  pinataJwt: import.meta.env.VITE_PINATA_JWT || "",
+  pinataJwt: String(import.meta.env.VITE_PINATA_JWT || "").trim(),
   ipfsGateway: safeGateway(import.meta.env.VITE_IPFS_GATEWAY),
 };
 
 export function pinataConfigured() {
-  return Boolean(config.pinataJwt);
+  return config.pinataJwt.length > 20;
 }
